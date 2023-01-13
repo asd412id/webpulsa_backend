@@ -1,0 +1,1 @@
+exports.assetsPath = process.env.APP_ASSETS || './public/assets';
