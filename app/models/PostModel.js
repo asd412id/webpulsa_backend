@@ -19,8 +19,13 @@ const PostModel = db.define('posts', {
   picture: {
     type: DataTypes.STRING
   },
+  publish: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: true
+  },
   slug: {
     type: DataTypes.STRING,
+    unique: true,
     set(value) {
       this.setDataValue('slug', slug(value));
     }

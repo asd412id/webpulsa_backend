@@ -8,6 +8,8 @@ const { existsSync, mkdirSync, writeFileSync, rmSync } = require("fs");
 const { getBuffer, base64Extension } = require("../../helpers/ImageHelper");
 const { assetsPath } = require("../../configs/AssetsPath");
 const md5 = require("md5");
+const slugger = require('slug');
+const randomstring = require('randomstring');
 
 class PostRepository {
   async all(page = 0, size = 20, search = '') {
@@ -75,18 +77,59 @@ class PostRepository {
     });
   }
 
+  checkSlug(slug, id = null) {
+    return new Promise((resolve, reject) => {
+      const generator = (slug, generated = false) => {
+        let _slug = slug;
+        PostModel.findOne({
+          where: {
+            slug: {
+              [Op.eq]: _slug
+            },
+            id: {
+              [Op.ne]: id
+            }
+          }
+        })
+          .then(found => {
+            if (found) {
+              const srandom = randomstring.generate({
+                charset: 'alphanumeric',
+                length: 5,
+                capitalization: 'lowercase'
+              });
+              if (generated) {
+                const explode = _slug.split('-');
+                explode.pop();
+                _slug = explode.join('-');
+              }
+              _slug = `${_slug}-${srandom}`;
+              return generator(_slug, true);
+            } else {
+              resolve(slug);
+            }
+          })
+          .catch(error => {
+            reject(error.message);
+          })
+      }
+      generator(slug);
+    });
+  }
+
   store(data) {
     return new Promise((resolve, reject) => {
       const store = async (data) => {
-        const { title, content, picture, slug, categories } = data;
+        const { title, content, picture, slug, categories, publish } = data;
         if (!title || !content) {
           return reject(statusMessage('Judul dan konten postingan tidak boleh kosong', 406));
         }
 
         const tr = await db.transaction();
         try {
+          const _slug = await this.checkSlug(slug ?? slugger(title));
           const picturePath = await this.savePicture(picture);
-          const insert = await PostModel.create({ title, content, slug: slug ?? title, picture: picturePath });
+          const insert = await PostModel.create({ title, content, slug: _slug, picture: picturePath, publish });
           const cats = [...(await PostCategoryModel.findAll({
             where: {
               id: {
@@ -115,7 +158,7 @@ class PostRepository {
         return reject(statusMessage('ID tidak boleh kosong', 406));
       }
       const store = async (data) => {
-        const { title, content, picture, slug, categories } = data;
+        const { title, content, picture, slug, categories, publish } = data;
         if (!title || !content) {
           return reject(statusMessage('Judul dan konten postingan tidak boleh kosong', 406));
         }
@@ -126,11 +169,14 @@ class PostRepository {
           if (!insert) {
             return reject(statusMessage('Data tidak ditemukan', 404));
           }
+          const _slug = await this.checkSlug(slug ?? insert.slug, id);
           const picturePath = await this.savePicture(picture);
           if (picturePath) {
-            rmSync(`${assetsPath}/${insert.picture}`);
+            if (existsSync(`${assetsPath}/${insert.picture}`)) {
+              rmSync(`${assetsPath}/${insert.picture}`);
+            }
           }
-          await insert.update({ title, content, slug: slug ?? insert.slug, picture: picturePath ?? insert.picture });
+          await insert.update({ title, content, slug: _slug, picture: picturePath ?? insert.picture, publish });
           const cats = [...(await PostCategoryModel.findAll({
             where: {
               id: {
@@ -165,7 +211,9 @@ class PostRepository {
           return reject(statusMessage('Data tidak ditemukan', 404));
         }
         if (data.picture) {
-          rmSync(`${assetsPath}/${data.picture}`);
+          if (existsSync(`${assetsPath}/${data.picture}`)) {
+            rmSync(`${assetsPath}/${data.picture}`);
+          }
         }
         await data.destroy();
         return resolve(statusMessage('Data berhasil dihapus'));
