@@ -4,7 +4,7 @@ const PostCategoryRepository = require('../repositories/PostCategoryRepository')
 const router = require('express').Router();
 
 router.get('/', async (req, res) => {
-  const { page, size, search } = req.body;
+  const { page, size, search } = req.query;
   const data = await PostCategoryRepository.all(page, size, search);
   return res.status(data.code).json(data);
 });

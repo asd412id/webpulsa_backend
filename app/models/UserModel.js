@@ -22,7 +22,9 @@ const UserModel = db.define('users', {
     type: DataTypes.STRING,
     allowNull: false,
     set(value) {
-      this.setDataValue('password', hashSync(value, 10));
+      if (value && value !== undefined) {
+        this.setDataValue('password', hashSync(value, 10));
+      }
     }
   },
   lastLogin: {

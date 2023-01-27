@@ -23,6 +23,10 @@ const PostModel = db.define('posts', {
     type: DataTypes.BOOLEAN,
     defaultValue: true
   },
+  date_publish: {
+    type: DataTypes.DATE,
+    defaultValue: new Date()
+  },
   slug: {
     type: DataTypes.STRING,
     unique: true,

@@ -101,7 +101,7 @@ class OperatorRepository {
             return reject(statusMessage('Data tidak ditemukan', 404));
           }
           const logoPath = await this.saveLogo(logo);
-          if (logoPath) {
+          if (logoPath && existsSync(`${assetsPath}/${insert.logo}`)) {
             rmSync(`${assetsPath}/${insert.logo}`);
           }
           await insert.update({ name, logo: logoPath ?? insert.logo });
@@ -125,7 +125,7 @@ class OperatorRepository {
         if (!data) {
           return reject(statusMessage('Data tidak ditemukan', 404));
         }
-        if (data.logo) {
+        if (data.logo && existsSync(`${assetsPath}/${data.logo}`)) {
           rmSync(`${assetsPath}/${data.logo}`);
         }
         await data.destroy();

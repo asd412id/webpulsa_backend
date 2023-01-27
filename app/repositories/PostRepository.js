@@ -45,7 +45,7 @@ class PostRepository {
           }
         ],
         order: [
-          ['title', 'asc']
+          ['createdAt', 'desc']
         ],
         group: ['id'],
         limit: limit,
@@ -120,7 +120,7 @@ class PostRepository {
   store(data) {
     return new Promise((resolve, reject) => {
       const store = async (data) => {
-        const { title, content, picture, slug, categories, publish } = data;
+        const { title, content, picture, slug, categories, publish, date_publish } = data;
         if (!title || !content) {
           return reject(statusMessage('Judul dan konten postingan tidak boleh kosong', 406));
         }
@@ -129,7 +129,7 @@ class PostRepository {
         try {
           const _slug = await this.checkSlug(slug ?? slugger(title));
           const picturePath = await this.savePicture(picture);
-          const insert = await PostModel.create({ title, content, slug: _slug, picture: picturePath, publish });
+          const insert = await PostModel.create({ title, content, slug: _slug, picture: picturePath, publish, date_publish });
           const cats = [...(await PostCategoryModel.findAll({
             where: {
               id: {
@@ -158,7 +158,7 @@ class PostRepository {
         return reject(statusMessage('ID tidak boleh kosong', 406));
       }
       const store = async (data) => {
-        const { title, content, picture, slug, categories, publish } = data;
+        const { title, content, picture, slug, categories, publish, date_publish } = data;
         if (!title || !content) {
           return reject(statusMessage('Judul dan konten postingan tidak boleh kosong', 406));
         }
@@ -176,7 +176,7 @@ class PostRepository {
               rmSync(`${assetsPath}/${insert.picture}`);
             }
           }
-          await insert.update({ title, content, slug: _slug, picture: picturePath ?? insert.picture, publish });
+          await insert.update({ title, content, slug: _slug, picture: picturePath ?? insert.picture, publish, date_publish });
           const cats = [...(await PostCategoryModel.findAll({
             where: {
               id: {

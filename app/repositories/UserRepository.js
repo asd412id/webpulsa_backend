@@ -3,6 +3,7 @@ const UserModel = require("../models/UserModel");
 const jwt = require('jsonwebtoken');
 const { secret } = require("../../configs/JWT");
 const { statusMessage, statusData } = require("../../helpers/Status");
+const { Op } = require("sequelize");
 
 class UserRepository {
   checkLogin(data) {
@@ -68,6 +69,40 @@ class UserRepository {
         }
       }
       store(data);
+    });
+  }
+
+  update(id, data) {
+    return new Promise((resolve, reject) => {
+      const update = async (data) => {
+        const { name, username, password } = data;
+        if (!name || !username) {
+          return reject(statusMessage('Data tidak lengkap', 406));
+        }
+        try {
+          const duplicate = await UserModel.findOne({
+            where: {
+              username: username,
+              id: {
+                [Op.ne]: id
+              }
+            }
+          });
+          if (!duplicate) {
+            const insert = await UserModel.findByPk(id);
+            if (insert) {
+              await insert.update({ name, username, password });
+              delete insert.dataValues.password;
+              return resolve(statusData(insert.dataValues, 200));
+            }
+            return reject(statusMessage(`Data tidak ditemukan`, 404));
+          }
+          return reject(statusMessage(`Username '${username}' telah digunakan`, 406));
+        } catch (error) {
+          return reject(statusMessage(error.message, 500));
+        }
+      }
+      update(data);
     });
   }
 

@@ -14,9 +14,22 @@ router.post('/login', async (req, res) => {
   }
 });
 
+router.get('/status', mustLogin, (req, res) => {
+  return res.json(req.user);
+});
+
 router.post('/register', async (req, res) => {
   try {
     const insert = await UserRepository.store(req.body);
+    return res.status(insert.code).json(insert);
+  } catch (error) {
+    return res.status(error.code).json(error);
+  }
+});
+
+router.post('/account', mustLogin, async (req, res) => {
+  try {
+    const insert = await UserRepository.update(req.user.id, req.body);
     return res.status(insert.code).json(insert);
   } catch (error) {
     return res.status(error.code).json(error);
