@@ -3,6 +3,7 @@ const { getPage, paginate } = require("../../helpers/Pagination");
 const { statusData, statusMessage } = require("../../helpers/Status");
 const PulsaModel = require("../models/PulsaModel");
 const OperatorModel = require("../models/OperatorModel");
+const PulsaCategoryModel = require("../models/PulsaCategoryModel");
 const db = require("../../configs/Database");
 
 class PulsaRepository {
@@ -16,6 +17,16 @@ class PulsaRepository {
               name: {
                 [Op.substring]: search
               }
+            },
+            {
+              '$pulsa_category.name$': {
+                [Op.substring]: search
+              }
+            },
+            {
+              '$operator.name$': {
+                [Op.substring]: search
+              }
             }
           ]
         },
@@ -26,15 +37,18 @@ class PulsaRepository {
             through: {
               attributes: []
             }
+          },
+          {
+            model: PulsaCategoryModel,
           }
         ],
         order: [
+          [PulsaCategoryModel, 'createdAt', 'asc'],
           ['name', 'asc']
         ],
-        group: ['id'],
+        subQuery: false,
         limit: limit,
-        offset: offset,
-        distinct: true
+        offset: offset
       });
       return statusData(paginate(data, page, size));
     } catch (error) {
@@ -45,14 +59,14 @@ class PulsaRepository {
   store(data) {
     return new Promise((resolve, reject) => {
       const store = async (data) => {
-        const { name, price, operators } = data;
+        const { name, price, operators, cat_id } = data;
         if (!name || !price) {
           return reject(statusMessage('Nama dan harga pulsa tidak boleh kosong', 406));
         }
 
         const tr = await db.transaction();
         try {
-          const insert = await PulsaModel.create({ name, price });
+          const insert = await PulsaModel.create({ name, price, pulsaCategoryId: cat_id });
           const ops = [...(await OperatorModel.findAll({
             where: {
               id: {
@@ -81,7 +95,7 @@ class PulsaRepository {
         return reject(statusMessage('ID tidak boleh kosong', 406));
       }
       const store = async (data) => {
-        const { name, price, operators } = data;
+        const { name, price, operators, cat_id } = data;
         if (!name || !price) {
           return reject(statusMessage('Nama dan harga pulsa tidak boleh kosong', 406));
         }
@@ -92,7 +106,7 @@ class PulsaRepository {
           if (!insert) {
             return reject(statusMessage('Data tidak ditemukan', 404));
           }
-          await insert.update({ name, price });
+          await insert.update({ name, price, pulsaCategoryId: cat_id });
           const ops = [...(await OperatorModel.findAll({
             where: {
               id: {

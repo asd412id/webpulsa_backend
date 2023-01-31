@@ -58,6 +58,83 @@ class PostRepository {
     }
   }
 
+  async getPosts(page = 0, size = 20, search = '') {
+    const { limit, offset } = getPage(page, size);
+    try {
+      const data = await PostModel.findAndCountAll({
+        where: {
+          [Op.and]: {
+            publish: true,
+            [Op.or]: [
+              {
+                title: {
+                  [Op.substring]: search
+                }
+              },
+              {
+                content: {
+                  [Op.substring]: search
+                }
+              },
+              {
+                slug: {
+                  [Op.substring]: search
+                }
+              }
+            ]
+          },
+
+        },
+        include: [
+          {
+            model: PostCategoryModel,
+            as: 'categories',
+            through: {
+              attributes: []
+            }
+          }
+        ],
+        order: [
+          ['date_publish', 'desc']
+        ],
+        group: ['id'],
+        limit: limit,
+        offset: offset,
+        distinct: true
+      });
+      return statusData(paginate(data, page, size));
+    } catch (error) {
+      return statusMessage(error.message, 500);
+    }
+  }
+
+  async getBySlug(slug) {
+    try {
+      const post = await PostModel.findOne({
+        where: {
+          [Op.and]: {
+            publish: true,
+            slug: {
+              [Op.eq]: slug
+            }
+          }
+        },
+        include: [
+          {
+            model: PostCategoryModel,
+            as: 'categories',
+            through: {
+              attributes: []
+            }
+          }
+        ]
+      });
+      return statusData(post);
+    } catch (error) {
+      return statusMessage(error.message, 500);
+    }
+  }
+
   savePicture(picture) {
     return new Promise(resolve => {
       if (picture) {

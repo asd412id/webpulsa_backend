@@ -5,7 +5,7 @@ const db = new Sequelize(process.env.DB_DATABASE, process.env.DB_USERNAME, proce
   port: process.env.DB_PORT || 3306,
   dialect: process.env.DB_CONNECTION || 'mysql',
   timezone: process.env.TIMEZONE || '+08:00',
-  logging: false
+  // logging: false
 });
 
 module.exports = db;
